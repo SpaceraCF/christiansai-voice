@@ -105,7 +105,7 @@ const STATIC_PROMPTS = {
   'no-slots':
     "Christian's calendar is pretty full at the moment. I'll let him know you called and he'll reach out to book a time. Have a great day!",
   'ask-location':
-    "Would you like to meet virtually over a video call, or catch up in person? Press 1 for a video call, or press 2 for in person.",
+    "Would you like to meet virtually over a Teams call, or catch up in person? Press 1 for a Teams call, or press 2 for in person.",
 };
 
 async function warmElevenLabsCache() {
@@ -530,7 +530,7 @@ app.post('/voice/location', async (req, res) => {
   try {
     const slot = req.query.slot;
     const twiml = new VoiceResponse();
-    const promptText = "Would you like to meet virtually over a video call, or catch up in person? Press 1 for a video call, or press 2 for in person.";
+    const promptText = "Would you like to meet virtually over a Teams call, or catch up in person? Press 1 for a Teams call, or press 2 for in person.";
     const gather = twiml.gather({
       input: 'dtmf',
       numDigits: 1,
@@ -629,7 +629,7 @@ app.post('/voice/book', async (req, res) => {
 
       // Extract Teams link from booking response if available
       const meetingUrl = result.data?.data?.meetingUrl || result.data?.meetingUrl || null;
-      const locLabel = loc === 'inperson' ? 'in person (Central West NSW)' : 'via video call';
+      const locLabel = loc === 'inperson' ? 'in person (Central West NSW)' : 'via Teams call';
 
       sendSms(CHRISTIAN_MOBILE,
         `📅 New booking! ${name} (${caller}) booked for ${slotShort} — ${locLabel}` +
@@ -638,7 +638,7 @@ app.post('/voice/book', async (req, res) => {
       if (caller !== 'unknown' && caller !== CHRISTIAN_MOBILE) {
         const callerMsg = loc === 'inperson'
           ? `Hi ${name}! You're booked with Christian for ${slotShort} (Sydney time) in person. He'll confirm the exact location. — Sarah`
-          : `Hi ${name}! You're booked with Christian for ${slotShort} (Sydney time) via video call.${meetingUrl ? ` Join here: ${meetingUrl}` : ' Christian will send the link shortly.'} — Sarah`;
+          : `Hi ${name}! You're booked with Christian for ${slotShort} (Sydney time) via Teams call.${meetingUrl ? ` Join here: ${meetingUrl}` : ' Christian will send the link shortly.'} — Sarah`;
         sendSms(caller, callerMsg, 3000);
       }
 
