@@ -17,7 +17,8 @@ const {
   CHRISTIAN_MOBILE,
   ELEVENLABS_API_KEY,
   ELEVENLABS_VOICE_ID = 'XrExE9yKIg1WjnnlVkGX',
-  CAL_API_KEY,
+  CAL_API_KEY: _CAL_API_KEY,
+  CALCOM_API_KEY,
   CAL_EVENT_TYPE_ID = '4308229',
   CAL_USERNAME = 'cfspacera',
   PORT = 10000,
@@ -30,7 +31,8 @@ function log(msg) {
 
 log(`SID: ${TWILIO_ACCOUNT_SID ? TWILIO_ACCOUNT_SID.substring(0, 10) + '...' : 'MISSING'}`);
 log(`ElevenLabs: ${ELEVENLABS_API_KEY ? 'configured' : 'not set — using Polly'}`);
-log(`Cal.com: ${CAL_API_KEY ? 'configured' : 'NOT SET'}`);
+const CAL_API_KEY = _CAL_API_KEY || CALCOM_API_KEY;
+log(`Cal.com: ${CAL_API_KEY ? 'configured' : 'NOT SET'} (checked CAL_API_KEY + CALCOM_API_KEY)`);
 
 const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
