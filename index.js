@@ -733,6 +733,27 @@ app.post('/sms', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /email/inbound  — Mailgun inbound webhook
+// ---------------------------------------------------------------------------
+app.post('/email/inbound', express.urlencoded({ extended: true }), (req, res) => {
+  try {
+    const sender   = req.body.sender || req.body.from || 'unknown';
+    const subject  = req.body.subject || '(no subject)';
+    const bodyText = (req.body['body-plain'] || req.body['stripped-text'] || '').substring(0, 500);
+    log(`Inbound email from ${sender}: ${subject}`);
+
+    // Notify Christian via SMS
+    const msg = `📧 Email to sarah@christiansai.com.au\nFrom: ${sender}\nSubject: ${subject}\n\n${bodyText}`;
+    sendSms(CHRISTIAN_MOBILE, msg.substring(0, 1600));
+
+    res.sendStatus(200);
+  } catch (err) {
+    log(`ERROR in /email/inbound: ${err.message}`);
+    res.sendStatus(200);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
 app.listen(PORT, async () => {
