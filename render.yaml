@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: christiansai-voice
+    runtime: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: TWILIO_ACCOUNT_SID
+        fromGroup: christiansai-secrets
+      - key: TWILIO_AUTH_TOKEN
+        fromGroup: christiansai-secrets
+      - key: TWILIO_PHONE_NUMBER
+        value: +61485005656
+      - key: CHRISTIAN_MOBILE
+        fromGroup: christiansai-secrets
