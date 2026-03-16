@@ -754,6 +754,88 @@ app.post('/email/inbound', express.urlencoded({ extended: true }), (req, res) =>
 });
 
 // ---------------------------------------------------------------------------
+// POST /bose/sms — Bose Professional / Calystro campaign reply handler
+// Number: +61485019556
+// YES → email Christian + Luke Oliver, auto-reply SMS
+// STOP → opt-out acknowledgement
+// ---------------------------------------------------------------------------
+const BOSE_OPT_OUTS = new Set();
+const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
+const MAILGUN_DOMAIN  = process.env.MAILGUN_DOMAIN || 'christiansai.com.au';
+
+function sendEmail(to, subject, text) {
+  const recipients = Array.isArray(to) ? to.join(',') : to;
+  const params = new URLSearchParams({
+    from:    'Sarah <sarah@christiansai.com.au>',
+    to:      recipients,
+    subject,
+    text,
+  });
+  const auth = Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64');
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.mailgun.net',
+      path:     `/v3/${MAILGUN_DOMAIN}/messages`,
+      method:   'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type':  'application/x-www-form-urlencoded',
+      },
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => { log(`Email sent to ${recipients}: ${data}`); resolve(); });
+    });
+    req.on('error', (err) => { log(`Email error: ${err.message}`); reject(err); });
+    req.write(params.toString());
+    req.end();
+  });
+}
+
+app.post('/bose/sms', (req, res) => {
+  try {
+    const from = req.body.From || 'unknown';
+    const body = (req.body.Body || '').trim();
+    log(`Bose campaign SMS from ${from}: ${body}`);
+
+    const twiml = new MessagingResponse();
+    const upper = body.toUpperCase();
+
+    if (upper === 'STOP' || upper.startsWith('STOP')) {
+      BOSE_OPT_OUTS.add(from);
+      log(`Opt-out recorded for ${from}`);
+      twiml.message('You have been unsubscribed and will receive no further messages from Calystro. — Sarah');
+    } else if (upper === 'YES' || upper.startsWith('YES')) {
+      // Notify Christian and Luke
+      const subject = `🎵 Bose Campaign — Callback Requested`;
+      const text = `A venue has replied YES to the Bose Professional / Calystro campaign.\n\nNumber: ${from}\nMessage: ${body}\nTime: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })}\n\nPlease call them back as soon as possible.\n\n— Sarah`;
+      sendEmail(
+        ['christian@christiansai.com.au', 'luke_oliver@outlook.com.au'],
+        subject,
+        text
+      ).catch(err => log(`Email error: ${err.message}`));
+
+      twiml.message("Thanks! Luke from Bose Professional AU will give you a call shortly to discuss your options. — Calystro");
+    } else {
+      // Any other reply — forward to Christian for review
+      sendEmail(
+        'christian@christiansai.com.au',
+        `Bose Campaign — Unrecognised reply from ${from}`,
+        `Number: ${from}\nMessage: ${body}\nTime: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })}`
+      ).catch(err => log(`Email error: ${err.message}`));
+      twiml.message("Thanks for your message. Someone from Calystro will be in touch. — Sarah");
+    }
+
+    res.type('text/xml');
+    res.send(twiml.toString());
+  } catch (err) {
+    log(`ERROR in /bose/sms: ${err.message}`);
+    res.sendStatus(200);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
 app.listen(PORT, async () => {
